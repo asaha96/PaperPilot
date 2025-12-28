@@ -12,12 +12,14 @@ import ReactFlow, {
   useEdgesState,
   Connection,
   NodeTypes,
+  EdgeTypes,
   ReactFlowInstance,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import PaperNode from './nodes/PaperNode'
 import ConceptNode from './nodes/ConceptNode'
 import CitationNode from './nodes/CitationNode'
+import RelationshipEdge from './edges/RelationshipEdge'
 import { getLayoutedElements } from '@/lib/graphLayout'
 import { PaperNode as PaperNodeType, PaperEdge } from '@/types'
 import PaperInput from './PaperInput'
@@ -26,6 +28,11 @@ const nodeTypes: NodeTypes = {
   paper: PaperNode,
   concept: ConceptNode,
   citation: CitationNode,
+}
+
+const edgeTypes: EdgeTypes = {
+  default: RelationshipEdge,
+  smoothstep: RelationshipEdge,
 }
 
 const initialNodes: Node[] = []
@@ -37,6 +44,7 @@ export default function PaperCanvas() {
   const [isExpanding, setIsExpanding] = useState(false)
   const expandingNodeId = useRef<string | null>(null)
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null)
+  const selectedNodes = useRef<Set<string>>(new Set())
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -211,6 +219,71 @@ export default function PaperCanvas() {
     return () => window.removeEventListener('expand-paper', handleExpand)
   }, [handleExpandPaper])
 
+  const handleAnalyzeRelationship = useCallback(async (edgeId: string, sourceId: string, targetId: string) => {
+    const sourceNode = nodes.find(n => n.id === sourceId) as PaperNodeType
+    const targetNode = nodes.find(n => n.id === targetId) as PaperNodeType
+
+    if (!sourceNode || !targetNode || sourceNode.data.type !== 'paper' || targetNode.data.type !== 'paper') {
+      console.error('Both nodes must be papers for relationship analysis')
+      return
+    }
+
+    // Mark edge as analyzing
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === edgeId
+          ? { ...e, data: { ...e.data, isAnalyzing: true } }
+          : e
+      )
+    )
+
+    try {
+      const response = await fetch('/api/summarize-relationship', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paperA: {
+            title: sourceNode.data.title,
+            summary: sourceNode.data.summary,
+            authors: sourceNode.data.authors,
+          },
+          paperB: {
+            title: targetNode.data.title,
+            summary: targetNode.data.summary,
+            authors: targetNode.data.authors,
+          },
+          edgeId,
+        }),
+      })
+
+      const { relationship } = await response.json()
+
+      // Update edge with relationship metadata
+      setEdges((eds) =>
+        eds.map((e) =>
+          e.id === edgeId
+            ? {
+                ...e,
+                data: {
+                  ...e.data,
+                  relationship,
+                  isAnalyzing: false,
+                  label: relationship.summary.substring(0, 50) + '...',
+                },
+              }
+            : e
+        )
+      )
+    } catch (error) {
+      console.error('Error analyzing relationship:', error)
+      setEdges((eds) =>
+        eds.map((e) =>
+          e.id === edgeId ? { ...e, data: { ...e.data, isAnalyzing: false } } : e
+        )
+      )
+    }
+  }, [nodes, setEdges])
+
   const onInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstance.current = instance
   }, [])
@@ -225,10 +298,62 @@ export default function PaperCanvas() {
         onConnect={onConnect}
         onInit={onInit}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onNodeClick={(event, node) => {
           console.log('Node clicked:', node.id, node.data.type)
-          if (node.data.type === 'paper') {
-            handleExpandPaper(node.id)
+          
+          // Handle multi-select for relationship analysis
+          if (event.ctrlKey || event.metaKey) {
+            if (selectedNodes.current.has(node.id)) {
+              selectedNodes.current.delete(node.id)
+            } else {
+              selectedNodes.current.add(node.id)
+            }
+            
+            // If two papers are selected, analyze their relationship
+            if (selectedNodes.current.size === 2 && node.data.type === 'paper') {
+              const selectedArray = Array.from(selectedNodes.current)
+              const node1 = nodes.find(n => n.id === selectedArray[0]) as PaperNodeType
+              const node2 = nodes.find(n => n.id === selectedArray[1]) as PaperNodeType
+              
+              if (node1 && node2 && node1.data.type === 'paper' && node2.data.type === 'paper') {
+                // Find or create edge between the two papers
+                let existingEdge = edges.find(
+                  e => (e.source === selectedArray[0] && e.target === selectedArray[1]) ||
+                       (e.source === selectedArray[1] && e.target === selectedArray[0])
+                )
+                
+                if (!existingEdge) {
+                  // Create new edge
+                  const newEdge: PaperEdge = {
+                    id: `edge-${selectedArray[0]}-${selectedArray[1]}`,
+                    source: selectedArray[0],
+                    target: selectedArray[1],
+                    type: 'smoothstep',
+                    data: { type: 'related' },
+                  }
+                  setEdges((eds) => [...eds, newEdge])
+                  existingEdge = newEdge
+                }
+                
+                // Analyze relationship
+                handleAnalyzeRelationship(existingEdge.id, selectedArray[0], selectedArray[1])
+                selectedNodes.current.clear()
+              }
+            }
+          } else {
+            // Single click - expand paper
+            if (node.data.type === 'paper') {
+              handleExpandPaper(node.id)
+            }
+            selectedNodes.current.clear()
+          }
+        }}
+        onEdgeClick={(event, edge) => {
+          console.log('Edge clicked:', edge.id)
+          // Analyze relationship when edge is clicked
+          if (edge.source && edge.target && !edge.data?.relationship && !edge.data?.isAnalyzing) {
+            handleAnalyzeRelationship(edge.id, edge.source, edge.target)
           }
         }}
         fitView

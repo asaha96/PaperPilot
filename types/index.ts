@@ -21,10 +21,18 @@ export interface Concept {
   importance: 'high' | 'medium' | 'low'
 }
 
+export interface RelationshipMetadata {
+  relationType: string
+  summary: string
+  confidenceScore: number
+}
+
 export interface PaperEdge extends Edge {
   data?: {
     type: 'cites' | 'contains' | 'related'
     label?: string
+    relationship?: RelationshipMetadata
+    isAnalyzing?: boolean
   }
 }
 

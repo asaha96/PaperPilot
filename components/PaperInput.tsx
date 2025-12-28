@@ -88,7 +88,7 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
       'application/pdf': ['.pdf'],
     },
     multiple: false,
-    noClick: true, // We'll handle clicks manually with open()
+    noClick: false, // Allow dropzone to handle clicks
     noKeyboard: true,
   })
 
@@ -98,6 +98,8 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
     if (file) {
       console.log('File selected via input:', file.name)
       handleFileProcess(file)
+      // Reset input so same file can be selected again
+      e.target.value = ''
     }
   }, [handleFileProcess])
 
@@ -154,62 +156,13 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 flex gap-3">
+      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10">
         <button
           onClick={() => setIsOpen(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors"
         >
           <FileText className="w-5 h-5" />
           Add Paper
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-            if (!isExtractingPdf) {
-              console.log('Opening file picker...')
-              const input = document.getElementById('pdf-upload-input') as HTMLInputElement
-              if (input) {
-                input.click()
-              } else {
-                open()
-              }
-            }
-          }}
-          onDragOver={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
-          onDrop={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            const files = Array.from(e.dataTransfer.files)
-            if (files.length > 0) {
-              onDrop(files as any, [])
-            }
-          }}
-          className={`bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors cursor-pointer ${
-            isDragActive ? 'bg-green-800 scale-105' : ''
-          } ${isExtractingPdf ? 'opacity-75 cursor-not-allowed' : ''}`}
-          disabled={isExtractingPdf}
-        >
-          <input
-            type="file"
-            accept=".pdf,application/pdf"
-            onChange={handleFileInputChange}
-            style={{ display: 'none' }}
-            id="pdf-upload-input"
-          />
-          <Upload className="w-5 h-5" />
-          {isExtractingPdf ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Extracting...
-            </>
-          ) : (
-            'Drop PDF or Click'
-          )}
         </button>
       </div>
     )
@@ -263,7 +216,7 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter paper title..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
             required
           />
         </div>
@@ -277,7 +230,7 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
             onChange={(e) => setSummary(e.target.value)}
             placeholder="Enter paper summary or paste abstract..."
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-black"
             required
           />
         </div>

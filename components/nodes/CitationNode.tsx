@@ -35,7 +35,7 @@ function CitationNode({ data, selected }: CitationNodeProps) {
           </h3>
           {data.authors && data.authors.length > 0 && (
             <p className="text-xs text-gray-500 mt-1 truncate">
-              {data.authors[0]?.name || data.authors[0]}
+              {data.authors[0]}
               {data.authors.length > 1 && ` et al.`}
             </p>
           )}

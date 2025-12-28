@@ -48,19 +48,21 @@ function PaperNode({ id, data, selected }: PaperNodeProps) {
         {data.summary}
       </p>
 
-      <button
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition-colors"
-        onClick={(e) => {
-          e.stopPropagation()
-          const event = new CustomEvent('expand-paper', { 
-            detail: { nodeId: id }
-          })
-          window.dispatchEvent(event)
-        }}
-      >
-        <Expand className="w-4 h-4" />
-        Expand Concepts
-      </button>
+      <div className="flex gap-2">
+        <button
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-medium transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            const event = new CustomEvent('expand-paper', { 
+              detail: { nodeId: id }
+            })
+            window.dispatchEvent(event)
+          }}
+        >
+          <Expand className="w-4 h-4" />
+          Explode
+        </button>
+      </div>
 
       <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
     </div>

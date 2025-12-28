@@ -27,7 +27,7 @@ export interface RelationshipMetadata {
   confidenceScore: number
 }
 
-export interface PaperEdge extends Edge {
+export type PaperEdge = Edge & {
   data?: {
     type: 'cites' | 'contains' | 'related'
     label?: string

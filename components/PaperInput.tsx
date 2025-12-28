@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { FileText, Loader2 } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { FileText, Loader2, Upload, X } from 'lucide-react'
+import { useDropzone } from 'react-dropzone'
 
 interface PaperInputProps {
   onAddPaper: (paperData: {
@@ -18,6 +19,87 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
   const [title, setTitle] = useState('')
   const [summary, setSummary] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [pdfFile, setPdfFile] = useState<File | null>(null)
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false)
+
+  const handleFileProcess = useCallback(async (file: File) => {
+    // Check file type
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a PDF file')
+      return
+    }
+
+    setPdfFile(file)
+    setIsExtractingPdf(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      console.log('Extracting PDF:', file.name, 'Size:', file.size, 'Type:', file.type)
+      const response = await fetch('/api/extract-pdf', {
+        method: 'POST',
+        body: formData,
+      })
+
+      console.log('API Response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('API Error:', errorData)
+        throw new Error(errorData.error || 'Failed to extract PDF')
+      }
+
+      const data = await response.json()
+      console.log('PDF extracted successfully:', { title: data.title, summaryLength: data.summary?.length })
+      
+      setTitle(data.title || file.name.replace('.pdf', ''))
+      setSummary(data.summary || '')
+      setIsOpen(true)
+    } catch (error) {
+      console.error('Error extracting PDF:', error)
+      alert(`Failed to extract PDF: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or enter manually.`)
+      setPdfFile(null)
+    } finally {
+      setIsExtractingPdf(false)
+    }
+  }, [])
+
+  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: any[]) => {
+    console.log('onDrop called:', { accepted: acceptedFiles.length, rejected: rejectedFiles.length })
+    
+    if (rejectedFiles.length > 0) {
+      alert('Please upload a PDF file')
+      return
+    }
+
+    const file = acceptedFiles[0]
+    if (!file) {
+      console.log('No file in acceptedFiles')
+      return
+    }
+
+    await handleFileProcess(file)
+  }, [handleFileProcess])
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+    },
+    multiple: false,
+    noClick: true, // We'll handle clicks manually with open()
+    noKeyboard: true,
+  })
+
+  // Handle file input change (when user clicks and selects file)
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      console.log('File selected via input:', file.name)
+      handleFileProcess(file)
+    }
+  }, [handleFileProcess])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -60,6 +142,7 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
       console.log('Paper added successfully')
       setTitle('')
       setSummary('')
+      setPdfFile(null)
       setIsOpen(false)
     } catch (error) {
       console.error('Error adding paper:', error)
@@ -71,18 +154,104 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors"
-      >
-        <FileText className="w-5 h-5" />
-        Add Paper
-      </button>
+      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 flex gap-3">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors"
+        >
+          <FileText className="w-5 h-5" />
+          Add Paper
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            if (!isExtractingPdf) {
+              console.log('Opening file picker...')
+              const input = document.getElementById('pdf-upload-input') as HTMLInputElement
+              if (input) {
+                input.click()
+              } else {
+                open()
+              }
+            }
+          }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const files = Array.from(e.dataTransfer.files)
+            if (files.length > 0) {
+              onDrop(files as any, [])
+            }
+          }}
+          className={`bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors cursor-pointer ${
+            isDragActive ? 'bg-green-800 scale-105' : ''
+          } ${isExtractingPdf ? 'opacity-75 cursor-not-allowed' : ''}`}
+          disabled={isExtractingPdf}
+        >
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={handleFileInputChange}
+            style={{ display: 'none' }}
+            id="pdf-upload-input"
+          />
+          <Upload className="w-5 h-5" />
+          {isExtractingPdf ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Extracting...
+            </>
+          ) : (
+            'Drop PDF or Click'
+          )}
+        </button>
+      </div>
     )
   }
 
   return (
     <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-200">
+      {pdfFile && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-green-600" />
+            <span className="text-sm text-green-800">{pdfFile.name}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPdfFile(null)
+              setTitle('')
+              setSummary('')
+            }}
+            className="text-green-600 hover:text-green-800"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      <div
+        {...getRootProps()}
+        className={`mb-4 p-4 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
+          isDragActive
+            ? 'border-green-500 bg-green-50'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}
+      >
+        <input {...getInputProps()} />
+        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+        <p className="text-sm text-gray-600">
+          {isDragActive
+            ? 'Drop PDF here'
+            : 'Drag & drop PDF here, or click to select'}
+        </p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">

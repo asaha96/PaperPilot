@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
           data: {
             type: 'citation',
             title: ref.title,
+            summary: ref.venue ? `Published in ${ref.venue}${ref.year ? ` (${ref.year})` : ''}` : `Citation ${index + 1}`,
             authors: ref.authors?.map((a) => a.name) || [],
             year: ref.year,
             isGhost: true,

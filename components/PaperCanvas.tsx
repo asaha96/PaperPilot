@@ -20,6 +20,8 @@ import PaperNode from './nodes/PaperNode'
 import ConceptNode from './nodes/ConceptNode'
 import CitationNode from './nodes/CitationNode'
 import RelationshipEdge from './edges/RelationshipEdge'
+import RelationshipChat from './RelationshipChat'
+import RelationshipLegend from './RelationshipLegend'
 import { getLayoutedElements } from '@/lib/graphLayout'
 import { PaperNode as PaperNodeType, PaperEdge } from '@/types'
 import PaperInput from './PaperInput'
@@ -45,6 +47,7 @@ export default function PaperCanvas() {
   const expandingNodeId = useRef<string | null>(null)
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null)
   const selectedNodes = useRef<Set<string>>(new Set())
+  const [chatEdge, setChatEdge] = useState<Edge | null>(null)
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -260,19 +263,23 @@ export default function PaperCanvas() {
 
       // Update edge with relationship metadata
       setEdges((eds) =>
-        eds.map((e) =>
-          e.id === edgeId
-            ? {
-                ...e,
-                data: {
-                  ...e.data,
-                  relationship,
-                  isAnalyzing: false,
-                  label: relationship.summary.substring(0, 50) + '...',
-                },
-              }
-            : e
-        )
+        eds.map((e) => {
+          if (e.id === edgeId) {
+            const updatedEdge = {
+              ...e,
+              data: {
+                ...e.data,
+                relationship,
+                isAnalyzing: false,
+                label: relationship.summary.substring(0, 50) + '...',
+              },
+            }
+            // Auto-open chat if relationship was just analyzed
+            setChatEdge(updatedEdge)
+            return updatedEdge
+          }
+          return e
+        })
       )
     } catch (error) {
       console.error('Error analyzing relationship:', error)
@@ -318,14 +325,14 @@ export default function PaperCanvas() {
               
               if (node1 && node2 && node1.data.type === 'paper' && node2.data.type === 'paper') {
                 // Find or create edge between the two papers
-                let existingEdge = edges.find(
+                let existingEdge: Edge | undefined = edges.find(
                   e => (e.source === selectedArray[0] && e.target === selectedArray[1]) ||
                        (e.source === selectedArray[1] && e.target === selectedArray[0])
                 )
                 
                 if (!existingEdge) {
                   // Create new edge
-                  const newEdge: PaperEdge = {
+                  const newEdge: Edge = {
                     id: `edge-${selectedArray[0]}-${selectedArray[1]}`,
                     source: selectedArray[0],
                     target: selectedArray[1],
@@ -337,7 +344,9 @@ export default function PaperCanvas() {
                 }
                 
                 // Analyze relationship
-                handleAnalyzeRelationship(existingEdge.id, selectedArray[0], selectedArray[1])
+                if (existingEdge.id && existingEdge.source && existingEdge.target) {
+                  handleAnalyzeRelationship(existingEdge.id, existingEdge.source, existingEdge.target)
+                }
                 selectedNodes.current.clear()
               }
             }
@@ -351,9 +360,14 @@ export default function PaperCanvas() {
         }}
         onEdgeClick={(event, edge) => {
           console.log('Edge clicked:', edge.id)
-          // Analyze relationship when edge is clicked
-          if (edge.source && edge.target && !edge.data?.relationship && !edge.data?.isAnalyzing) {
+          
+          // If relationship exists, open chat. Otherwise, analyze first.
+          const edgeData = edge.data as any
+          if (edgeData?.relationship) {
+            setChatEdge(edge)
+          } else if (edge.source && edge.target && !edgeData?.isAnalyzing) {
             handleAnalyzeRelationship(edge.id, edge.source, edge.target)
+            // After analysis, the edge will be updated and can be clicked again for chat
           }
         }}
         fitView
@@ -372,8 +386,17 @@ export default function PaperCanvas() {
           }}
         />
       </ReactFlow>
-      <PaperInput onAddPaper={handleAddPaper} />
-    </div>
-  )
-}
+          <PaperInput onAddPaper={handleAddPaper} />
+          <RelationshipLegend />
+          {chatEdge && chatEdge.source && chatEdge.target && (
+            <RelationshipChat
+              edge={chatEdge}
+              sourceNode={nodes.find(n => n.id === chatEdge.source) as PaperNodeType}
+              targetNode={nodes.find(n => n.id === chatEdge.target) as PaperNodeType}
+              onClose={() => setChatEdge(null)}
+            />
+          )}
+        </div>
+      )
+    }
 

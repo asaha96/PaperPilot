@@ -156,25 +156,26 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10">
+      <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 animate-fade-in">
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-colors"
+          className="group relative bg-gradient-to-r from-paper-primary to-paper-secondary text-white px-8 py-3.5 rounded-xl shadow-lg shadow-paper-primary/30 flex items-center gap-3 transition-all duration-300 hover:shadow-xl hover:shadow-paper-primary/40 hover:scale-105 font-medium"
         >
-          <FileText className="w-5 h-5" />
-          Add Paper
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-paper-primary to-paper-secondary opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-300" />
+          <FileText className="w-5 h-5 relative z-10" />
+          <span className="relative z-10">Add Paper</span>
         </button>
       </div>
     )
   }
 
   return (
-    <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-200">
+    <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-10 bg-surface-elevated rounded-2xl shadow-2xl p-6 w-full max-w-2xl border border-border/50 backdrop-blur-xl animate-slide-up">
       {pdfFile && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-green-600" />
-            <span className="text-sm text-green-800">{pdfFile.name}</span>
+        <div className="mb-4 p-3.5 bg-success/10 border border-success/30 rounded-xl flex items-center justify-between backdrop-blur-sm">
+          <div className="flex items-center gap-2.5">
+            <FileText className="w-4 h-4 text-success" />
+            <span className="text-sm text-success font-medium">{pdfFile.name}</span>
           </div>
           <button
             type="button"
@@ -183,7 +184,7 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
               setTitle('')
               setSummary('')
             }}
-            className="text-green-600 hover:text-green-800"
+            className="text-success/70 hover:text-success transition-colors p-1 rounded-md hover:bg-success/10"
           >
             <X className="w-4 h-4" />
           </button>
@@ -191,23 +192,23 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
       )}
       <div
         {...getRootProps()}
-        className={`mb-4 p-4 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
+        className={`mb-5 p-6 border-2 border-dashed rounded-xl text-center cursor-pointer transition-all duration-300 ${
           isDragActive
-            ? 'border-green-500 bg-green-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-success bg-success/10 shadow-glow'
+            : 'border-border hover:border-paper-primary/50 hover:bg-surface/50'
         }`}
       >
         <input {...getInputProps()} />
-        <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-        <p className="text-sm text-gray-600">
+        <Upload className={`w-10 h-10 mx-auto mb-3 transition-colors ${isDragActive ? 'text-success' : 'text-muted'}`} />
+        <p className={`text-sm font-medium transition-colors ${isDragActive ? 'text-success' : 'text-foreground/70'}`}>
           {isDragActive
             ? 'Drop PDF here'
             : 'Drag & drop PDF here, or click to select'}
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="title" className="block text-sm font-semibold text-foreground mb-2">
             Paper Title
           </label>
           <input
@@ -216,12 +217,12 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter paper title..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
+            className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-paper-primary focus:border-paper-primary text-foreground placeholder:text-muted transition-all duration-200 font-medium"
             required
           />
         </div>
         <div>
-          <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="summary" className="block text-sm font-semibold text-foreground mb-2">
             Summary
           </label>
           <textarea
@@ -230,15 +231,15 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
             onChange={(e) => setSummary(e.target.value)}
             placeholder="Enter paper summary or paste abstract..."
             rows={4}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-black"
+            className="w-full px-4 py-3 bg-surface border border-border rounded-xl focus:ring-2 focus:ring-paper-primary focus:border-paper-primary resize-none text-foreground placeholder:text-muted transition-all duration-200 font-medium"
             required
           />
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-2">
           <button
             type="submit"
             disabled={isLoading}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-gradient-to-r from-paper-primary to-paper-secondary hover:from-paper-primary/90 hover:to-paper-secondary/90 disabled:from-muted disabled:to-muted text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-paper-primary/30 hover:shadow-xl hover:shadow-paper-primary/40 disabled:shadow-none disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -256,7 +257,7 @@ export default function PaperInput({ onAddPaper }: PaperInputProps) {
               setTitle('')
               setSummary('')
             }}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            className="px-6 py-3 border border-border rounded-xl hover:bg-surface transition-all duration-200 text-foreground font-medium"
           >
             Cancel
           </button>

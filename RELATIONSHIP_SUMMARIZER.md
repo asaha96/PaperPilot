@@ -91,3 +91,5 @@ The system uses the same Ollama configuration as concept extraction:
 4. **Confidence Thresholds**: Filter low-confidence relationships
 5. **Custom Relationship Types**: Allow users to define custom types
 
+
+

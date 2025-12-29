@@ -76,46 +76,57 @@ export default function RelationshipChat({ edge, sourceNode, targetNode, onClose
   if (!edge || !sourceNode || !targetNode) return null
 
   return (
-    <div className="fixed bottom-6 right-6 z-20 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col max-h-[600px]">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-blue-600" />
+    <div className="fixed bottom-6 right-6 z-20 w-96 bg-surface-elevated rounded-2xl shadow-2xl border border-border/50 backdrop-blur-xl flex flex-col max-h-[600px] animate-slide-up">
+      <div className="p-5 border-b border-border/50 flex items-center justify-between bg-gradient-to-r from-paper-primary/5 to-paper-secondary/5">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-paper-primary/20 to-paper-secondary/20 rounded-lg border border-paper-primary/30">
+            <MessageCircle className="w-5 h-5 text-paper-primary" />
+          </div>
           <div>
-            <h3 className="font-semibold text-sm">Relationship Chat</h3>
-            <p className="text-xs text-gray-500">
-              {sourceNode.data.title.substring(0, 30)}... ↔ {targetNode.data.title.substring(0, 30)}...
+            <h3 className="font-bold text-sm text-foreground">Relationship Chat</h3>
+            <p className="text-xs text-muted mt-0.5">
+              {sourceNode.data.title.substring(0, 25)}... ↔ {targetNode.data.title.substring(0, 25)}...
             </p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-muted hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-surface"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {messages.length === 0 && (
-          <div className="text-sm text-gray-500 text-center py-8">
-            <p className="mb-2">Ask questions about the relationship between these papers:</p>
-            <ul className="text-left space-y-1 text-xs">
-              <li>• "How does the methodology differ?"</li>
-              <li>• "What are the key improvements?"</li>
-              <li>• "Compare their approaches"</li>
+          <div className="text-sm text-muted text-center py-8">
+            <p className="mb-3 font-medium text-foreground">Ask questions about the relationship between these papers:</p>
+            <ul className="text-left space-y-2 text-xs">
+              <li className="flex items-center gap-2">
+                <span className="text-paper-primary">•</span>
+                <span>"How does the methodology differ?"</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-paper-primary">•</span>
+                <span>"What are the key improvements?"</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-paper-primary">•</span>
+                <span>"Compare their approaches"</span>
+              </li>
             </ul>
           </div>
         )}
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
           >
             <div
-              className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+              className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm font-medium ${
                 message.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                  ? 'bg-gradient-to-r from-paper-primary to-paper-secondary text-white shadow-lg'
+                  : 'bg-surface text-foreground border border-border/50'
               }`}
             >
               {message.content}
@@ -123,30 +134,30 @@ export default function RelationshipChat({ edge, sourceNode, targetNode, onClose
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg px-3 py-2 text-sm flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Thinking...
+          <div className="flex justify-start animate-fade-in">
+            <div className="bg-surface border border-border/50 rounded-xl px-4 py-2.5 text-sm flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-paper-primary" />
+              <span className="text-foreground font-medium">Thinking...</span>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
+      <form onSubmit={handleSubmit} className="p-5 border-t border-border/50 bg-surface/50">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about the relationship..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-2.5 bg-surface border border-border rounded-xl text-sm text-foreground placeholder:text-muted focus:ring-2 focus:ring-paper-primary focus:border-paper-primary transition-all font-medium"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md transition-colors"
+            className="px-4 py-2.5 bg-gradient-to-r from-paper-primary to-paper-secondary hover:from-paper-primary/90 hover:to-paper-secondary/90 disabled:from-muted disabled:to-muted text-white rounded-xl transition-all duration-200 shadow-lg shadow-paper-primary/30 hover:shadow-xl hover:shadow-paper-primary/40 disabled:shadow-none disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
           </button>

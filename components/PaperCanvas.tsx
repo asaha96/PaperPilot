@@ -6,6 +6,7 @@ import ReactFlow, {
   Edge,
   addEdge,
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   useNodesState,
@@ -372,10 +373,15 @@ export default function PaperCanvas() {
         }}
         fitView
         fitViewOptions={{ padding: 0.2, maxZoom: 1.5 }}
-        className="bg-gray-50"
+        className="bg-transparent"
         style={{ width: '100%', height: '100%' }}
       >
-        <Background />
+        <Background 
+          variant={BackgroundVariant.Dots}
+          gap={20} 
+          size={1}
+          color="rgba(99, 102, 241, 0.15)"
+        />
         <Controls />
         <MiniMap
           nodeColor={(node) => {
